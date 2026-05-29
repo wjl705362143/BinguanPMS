@@ -167,6 +167,52 @@ function selectedStay() {
   return state.stays.find((stay) => stay.id === state.selectedStayId) || state.stays.find((stay) => stay.status === "inhouse");
 }
 
+function persistentState() {
+  const { modal, toast, ...data } = state;
+  return {
+    ...data,
+    view: "dashboard",
+    settingsSection: "overview",
+    roomFilter: "all",
+    selectedStayId: null
+  };
+}
+
+async function loadPersistedState() {
+  try {
+    const response = await fetch("/api/state", { cache: "no-store" });
+    if (!response.ok) return;
+    const payload = await response.json();
+    if (!payload.state) return;
+    Object.assign(state, payload.state, {
+      modal: null,
+      toast: "",
+      view: "dashboard",
+      settingsSection: "overview",
+      roomFilter: "all",
+      selectedStayId: null
+    });
+  } catch (error) {
+    console.info("PMS API unavailable, using in-memory demo data.");
+  }
+}
+
+function persistState() {
+  if (persistState.loading) return;
+  window.clearTimeout(persistState.timer);
+  persistState.timer = window.setTimeout(async () => {
+    try {
+      await fetch("/api/state", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: persistentState() })
+      });
+    } catch (error) {
+      console.info("PMS data was not persisted because the API is unavailable.");
+    }
+  }, 250);
+}
+
 function showToast(message) {
   state.toast = message;
   render();
@@ -614,6 +660,7 @@ function render() {
     ${state.modal ? renderModal() : ""}
     ${state.toast ? `<div class="toast">${state.toast}</div>` : ""}
   `;
+  persistState();
 }
 
 function renderSidebar() {
@@ -1675,4 +1722,11 @@ function modalShell(title, body, actions) {
   `;
 }
 
-render();
+async function boot() {
+  persistState.loading = true;
+  await loadPersistedState();
+  persistState.loading = false;
+  render();
+}
+
+boot();

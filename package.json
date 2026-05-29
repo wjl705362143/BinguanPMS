@@ -1,0 +1,14 @@
+{
+  "name": "binguan-pms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "宾馆 PMS 前后端一体原型",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "check": "node --check app.js && node --check server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
